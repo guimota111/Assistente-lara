@@ -1,71 +1,14 @@
 /* ──────────── Actions ──────────── */
-function startWork() {
-    const t = new Date().toISOString();
-    data = defaultData();
-    data.state = 'working';
-    data.workStartTime = t;
-    data.currentCaseStart = t;
-    saveData();
-    renderRoot();
-    startTimer();
-}
-
-function registerCase(slides, thirdParty = false, points = 0) {
-    const endTime   = new Date().toISOString();
-    const caseStart = ts(data.currentCaseStart);
-    const caseEnd   = ts(endTime);
-    let duration = caseEnd - caseStart;
-    for (const p of data.pauses) {
-        const os = Math.max(ts(p.start), caseStart);
-        const oe = Math.min(ts(p.end), caseEnd);
-        if (oe > os) duration -= (oe - os);
-    }
+function registerCase(type, slides, points, thirdParty = false) {
     const entry = {
         id: data.cases.length + 1,
-        startTime: data.currentCaseStart,
-        endTime,
+        type: type || '',
         slides,
-        duration: Math.max(0, duration),
+        points: points || 0,
+        time: new Date().toISOString(),
     };
     if (thirdParty) entry.thirdParty = true;
-    if (points > 0) entry.points = points;
     data.cases.push(entry);
-    data.currentCaseStart = endTime;
-    saveData();
-    renderRoot();
-}
-
-function pauseWork() {
-    data.state = 'paused';
-    data.currentPauseStart = new Date().toISOString();
-    saveData();
-    renderRoot();
-}
-
-function resumeWork() {
-    data.pauses.push({ start: data.currentPauseStart, end: new Date().toISOString() });
-    data.currentPauseStart = null;
-    data.state = 'working';
-    saveData();
-    renderRoot();
-}
-
-async function endDay() {
-    if (data.state === 'paused') {
-        data.pauses.push({ start: data.currentPauseStart, end: new Date().toISOString() });
-        data.currentPauseStart = null;
-    }
-    data.state = 'ended';
-    data.dayEndTime = new Date().toISOString();
-    saveData();
-    await saveToHistory(data);
-    stopTimer();
-    renderRoot();
-}
-
-function newDay() {
-    stopTimer();
-    data = defaultData();
     saveData();
     renderRoot();
 }
@@ -92,39 +35,28 @@ async function deleteHistoryDay(date) {
     }
 }
 
-async function deleteHistorySession(date, sessionIdx) {
-    if (!confirm('Apagar esta sessão?')) return;
-    try {
-        const doc = await historyRef(date).get();
-        if (!doc.exists) return;
-        const d = doc.data();
-        const sessions = (d.sessions || []).filter((_, i) => i !== sessionIdx);
-        if (sessions.length === 0) {
-            await historyRef(date).delete();
-            if (historyCache) delete historyCache[date];
-            expandedDays.delete(date);
-        } else {
-            await historyRef(date).set({ date, sessions });
-            if (historyCache) historyCache[date] = { date, sessions };
-        }
-        expandedSessions.delete(`${date}-${sessionIdx}`);
-        renderRoot();
-    } catch (e) {
-        console.warn('deleteHistorySession:', e);
-        alert('Erro ao apagar a sessão.');
-    }
-}
-
-async function deleteHistoryCase(date, sessionIdx, caseIdx) {
+async function deleteHistoryCase(date, flatCaseIdx) {
     if (!confirm('Apagar este caso?')) return;
     try {
-        const doc = await historyRef(date).get();
-        if (!doc.exists) return;
-        const d = doc.data();
-        const sessions = d.sessions ? d.sessions.map(s => ({ ...s, cases: [...(s.cases || [])] })) : [];
-        sessions[sessionIdx].cases.splice(caseIdx, 1);
-        await historyRef(date).set({ date, sessions });
-        if (historyCache) historyCache[date] = { date, sessions };
+        const snap = await historyRef(date).get();
+        if (!snap.exists) return;
+        const d = snap.data();
+        if (d.sessions) {
+            // Legacy format: find case by flat index across sessions
+            const sessions = d.sessions.map(s => ({ ...s, cases: [...(s.cases || [])] }));
+            let idx = flatCaseIdx;
+            for (const s of sessions) {
+                if (idx < s.cases.length) { s.cases.splice(idx, 1); break; }
+                idx -= s.cases.length;
+            }
+            await historyRef(date).set({ date, sessions });
+            if (historyCache) historyCache[date] = { date, sessions };
+        } else {
+            const cases = [...(d.cases || [])];
+            cases.splice(flatCaseIdx, 1);
+            await historyRef(date).set({ date, cases });
+            if (historyCache) historyCache[date] = { date, cases };
+        }
         renderRoot();
     } catch (e) {
         console.warn('deleteHistoryCase:', e);

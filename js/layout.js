@@ -10,6 +10,10 @@ async function setView(view) {
         renderRoot();
         await loadPendencias();
     }
+    if (view === 'tipos' && caseTypesCache === null) {
+        renderRoot();
+        await loadCaseTypes();
+    }
     renderRoot();
 }
 
@@ -39,6 +43,9 @@ function renderRoot() {
     } else if (currentView === 'pendencias') {
         contentHTML = renderPendencias();
         viewTitle = 'Pendências';
+    } else if (currentView === 'tipos') {
+        contentHTML = renderTipos();
+        viewTitle = 'Tipos de Caso';
     } else {
         contentHTML = renderToday();
         viewTitle = 'Controle de Laudos';
@@ -58,6 +65,10 @@ function renderRoot() {
             <button class="sidebar-nav-item${currentView === 'today' ? ' active' : ''}" id="sideNavToday">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 Hoje
+            </button>
+            <button class="sidebar-nav-item${currentView === 'tipos' ? ' active' : ''}" id="sideNavTipos">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                Tipos de Caso
             </button>
             <button class="sidebar-nav-item${currentView === 'history' ? ' active' : ''}" id="sideNavHistory">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>

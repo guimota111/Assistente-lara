@@ -21,7 +21,7 @@ function renderStats() {
     const filtered = allDays.filter(d => inPeriod(d.date));
     const dayStats = filtered.map(d => ({ date: d.date, ...calcDayStats(d) }));
 
-    let totalCases = 0, totalSlides = 0, totalCasesMs = 0, totalWorkMs = 0;
+    let totalCases = 0, totalSlides = 0, totalPoints = 0;
     let totalOwnC = 0, totalThirdC = 0;
     let totalOwnS = 0, totalThirdS = 0;
     for (const d of dayStats) {
@@ -29,17 +29,15 @@ function renderStats() {
         totalThirdC += d.totalCases - d.ownTotalCases;
         totalOwnS   += d.ownTotalSlides;
         totalThirdS += d.totalSlides - d.ownTotalSlides;
-        totalWorkMs += d.workMs;
+        totalPoints += d.totalPoints;
         if (statsSegment === 'own') {
-            totalCases += d.ownTotalCases; totalSlides += d.ownTotalSlides; totalCasesMs += d.ownCasesMs;
+            totalCases += d.ownTotalCases; totalSlides += d.ownTotalSlides;
         } else if (statsSegment === 'third') {
-            totalCases += d.totalCases - d.ownTotalCases; totalSlides += d.totalSlides - d.ownTotalSlides; totalCasesMs += d.totalCasesMs - d.ownCasesMs;
+            totalCases += d.totalCases - d.ownTotalCases; totalSlides += d.totalSlides - d.ownTotalSlides;
         } else {
-            totalCases += d.totalCases; totalSlides += d.totalSlides; totalCasesMs += d.totalCasesMs;
+            totalCases += d.totalCases; totalSlides += d.totalSlides;
         }
     }
-    const avgPerCase  = totalCases  > 0 ? totalCasesMs / totalCases  : 0;
-    const avgPerSlide = totalSlides > 0 ? totalCasesMs / totalSlides : 0;
 
     const periodLabels = { week: 'Esta Semana', month: 'Este Mês', year: 'Este Ano', all: 'Geral' };
     const periodTabs = ['week', 'month', 'year', 'all'].map(p =>
@@ -53,6 +51,7 @@ function renderStats() {
             if (statsSegment === 'third') return f.totalSlides - f.ownTotalSlides;
             return f.totalSlides;
         }
+        if (statsMetric === 'points') return f.totalPoints;
         if (statsSegment === 'own')   return f.ownTotalCases;
         if (statsSegment === 'third') return f.totalCases - f.ownTotalCases;
         return f.totalCases;
@@ -65,8 +64,8 @@ function renderStats() {
             const ds = d.toISOString().split('T')[0];
             const f = dayStats.find(x => x.date === ds);
             const lbl = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','');
-            const ownV   = f ? (statsMetric === 'slides' ? f.ownTotalSlides : f.ownTotalCases) : 0;
-            const thirdV = f ? (statsMetric === 'slides' ? f.totalSlides - f.ownTotalSlides : f.totalCases - f.ownTotalCases) : 0;
+            const ownV   = f ? (statsMetric === 'slides' ? f.ownTotalSlides : statsMetric === 'points' ? f.totalPoints : f.ownTotalCases) : 0;
+            const thirdV = f ? (statsMetric === 'slides' ? f.totalSlides - f.ownTotalSlides : statsMetric === 'points' ? 0 : f.totalCases - f.ownTotalCases) : 0;
             chartItems.push({ lbl, val: segVal(f), own: ownV, third: thirdV });
         }
     } else if (statsView === 'month') {
@@ -76,28 +75,29 @@ function renderStats() {
             const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
             const f = dayStats.find(x => x.date === ds);
             const lbl = (i === 1 || i % 5 === 0) ? String(i) : '';
-            const ownV   = f ? (statsMetric === 'slides' ? f.ownTotalSlides : f.ownTotalCases) : 0;
-            const thirdV = f ? (statsMetric === 'slides' ? f.totalSlides - f.ownTotalSlides : f.totalCases - f.ownTotalCases) : 0;
+            const ownV   = f ? (statsMetric === 'slides' ? f.ownTotalSlides : statsMetric === 'points' ? f.totalPoints : f.ownTotalCases) : 0;
+            const thirdV = f ? (statsMetric === 'slides' ? f.totalSlides - f.ownTotalSlides : statsMetric === 'points' ? 0 : f.totalCases - f.ownTotalCases) : 0;
             chartItems.push({ lbl, val: segVal(f), own: ownV, third: thirdV });
         }
     } else {
         const mMap = {};
         for (const d of dayStats) {
             const mk = d.date.slice(0, 7);
-            if (!mMap[mk]) mMap[mk] = { own: 0, third: 0 };
+            if (!mMap[mk]) mMap[mk] = { own: 0, third: 0, pts: 0 };
             mMap[mk].own   += statsMetric === 'slides' ? d.ownTotalSlides : d.ownTotalCases;
             mMap[mk].third += statsMetric === 'slides' ? d.totalSlides - d.ownTotalSlides : d.totalCases - d.ownTotalCases;
+            mMap[mk].pts   += d.totalPoints;
         }
         for (const [mk, v] of Object.entries(mMap).sort()) {
             const [y, m] = mk.split('-');
             const lbl = new Date(parseInt(y), parseInt(m)-1, 1).toLocaleDateString('pt-BR', { month: 'short' }).replace('.','');
-            const val = statsSegment === 'own' ? v.own : statsSegment === 'third' ? v.third : v.own + v.third;
+            const val = statsMetric === 'points' ? v.pts : statsSegment === 'own' ? v.own : statsSegment === 'third' ? v.third : v.own + v.third;
             chartItems.push({ lbl, val, own: v.own, third: v.third });
         }
     }
 
     const maxVal = Math.max(...chartItems.map(c => c.val), 1);
-    const isAll = statsSegment === 'all';
+    const isAll = statsSegment === 'all' && statsMetric !== 'points';
     const bars = chartItems.map(ci => {
         const hPct     = Math.round((ci.val   / maxVal) * 90);
         const ownPct   = Math.round((ci.own   / maxVal) * 90);
@@ -115,7 +115,7 @@ function renderStats() {
                 valHTML = ci.val > 0 ? `<div class="chart-val">${ci.val}</div>` : '';
             }
         } else {
-            const barClass = statsSegment === 'third' ? ' secondary' : '';
+            const barClass = statsMetric === 'points' ? ' pts' : statsSegment === 'third' ? ' secondary' : '';
             barHTML = `<div class="chart-bar${barClass}" style="height:${Math.max(hPct, ci.val > 0 ? 2 : 0)}px;"></div>`;
             valHTML = ci.val > 0 ? `<div class="chart-val">${ci.val}</div>` : '';
         }
@@ -129,39 +129,43 @@ function renderStats() {
 
     const metricToggleHTML = `
         <div class="stats-period-tabs">
-            <button class="period-btn${statsMetric === 'cases' ? ' active' : ''}" data-metric="cases">Por Casos</button>
-            <button class="period-btn${statsMetric === 'slides' ? ' active' : ''}" data-metric="slides">Por Lâminas</button>
+            <button class="period-btn${statsMetric === 'cases'  ? ' active' : ''}" data-metric="cases">Casos</button>
+            <button class="period-btn${statsMetric === 'slides' ? ' active' : ''}" data-metric="slides">Lâminas</button>
+            <button class="period-btn${statsMetric === 'points' ? ' active' : ''}" data-metric="points">Pontos</button>
         </div>`;
+
+    const metricLabel = statsMetric === 'points' ? 'Pontos' : statsMetric === 'slides' ? 'Lâminas' : 'Casos';
 
     return `
     <div class="stats-period-tabs-row">
         <div class="stats-period-tabs" style="margin-right:auto">${periodTabs}</div>
         ${metricToggleHTML}
     </div>
+    ${statsMetric !== 'points' ? `
     <div class="stats-segment-row">
         <div class="segment-chip${statsSegment === 'all'   ? ' active' : ''}" data-segment="all">
             <div class="sc-val">${statsMetric === 'slides' ? totalOwnS + totalThirdS : totalOwnC + totalThirdC}</div>
-            <div class="sc-lbl">Todos ${statsMetric === 'slides' ? 'as Lâminas' : 'os Casos'}</div>
+            <div class="sc-lbl">Todos</div>
         </div>
         <div class="segment-chip${statsSegment === 'own'   ? ' active' : ''}" data-segment="own">
             <div class="sc-val">${statsMetric === 'slides' ? totalOwnS : totalOwnC}</div>
-            <div class="sc-lbl">${statsMetric === 'slides' ? 'Minhas Lâminas' : 'Meus Casos'}</div>
+            <div class="sc-lbl">Meus</div>
         </div>
         <div class="segment-chip${statsSegment === 'third' ? ' active' : ''}" data-segment="third">
             <div class="sc-val">${statsMetric === 'slides' ? totalThirdS : totalThirdC}</div>
             <div class="sc-lbl">Terceiros</div>
         </div>
-    </div>
+    </div>` : ''}
     <div class="stats-summary-grid">
-        <div class="stats-summary-item"><div class="ssi-value">${totalCases}</div><div class="ssi-label">Casos</div></div>
-        <div class="stats-summary-item"><div class="ssi-value">${totalSlides}</div><div class="ssi-label">Lâminas</div></div>
+        <div class="stats-summary-item"><div class="ssi-value">${totalOwnC + totalThirdC}</div><div class="ssi-label">Casos</div></div>
+        <div class="stats-summary-item"><div class="ssi-value">${totalOwnS + totalThirdS}</div><div class="ssi-label">Lâminas</div></div>
+        <div class="stats-summary-item"><div class="ssi-value">${totalPoints}</div><div class="ssi-label">Pontos</div></div>
         <div class="stats-summary-item"><div class="ssi-value">${dayStats.length}</div><div class="ssi-label">Dias</div></div>
-        <div class="stats-summary-item"><div class="ssi-value">${avgPerCase  > 0 ? formatShort(avgPerCase)  : '--'}</div><div class="ssi-label">Média/Caso</div></div>
-        <div class="stats-summary-item"><div class="ssi-value">${avgPerSlide > 0 ? formatShort(avgPerSlide) : '--'}</div><div class="ssi-label">Média/Lâmina</div></div>
-        <div class="stats-summary-item"><div class="ssi-value">${formatShort(totalWorkMs) || '--'}</div><div class="ssi-label">Tempo total</div></div>
+        <div class="stats-summary-item"><div class="ssi-value">${totalOwnC}</div><div class="ssi-label">Meus casos</div></div>
+        <div class="stats-summary-item"><div class="ssi-value">${totalThirdC}</div><div class="ssi-label">Terceiros</div></div>
     </div>
     <div class="chart-wrap">
-        <div class="chart-title">${statsMetric === 'slides' ? 'Lâminas por período' : 'Casos por período'}</div>
+        <div class="chart-title">${metricLabel} por período</div>
         <div class="chart-bars">${bars}</div>
         ${legendHTML}
     </div>`;

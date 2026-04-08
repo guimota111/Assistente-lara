@@ -949,6 +949,101 @@ header .date { color: var(--text-muted); font-size: 0.85rem; text-transform: cap
 
 .cong-preview { border-top: 1px solid var(--border); padding-top: 14px; }
 .cong-preview-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 10px; }
+/* ──────────── Today — simplified register ──────────── */
+.today-simple { display: flex; flex-direction: column; gap: 14px; }
+
+.register-card { padding: 20px 18px; }
+
+.register-summary {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.rsumm-item { display: flex; flex-direction: column; align-items: center; }
+.rsumm-val { font-family: var(--tech-font); font-size: 2rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.rsumm-lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 2px; }
+.rsumm-sep { font-size: 1.5rem; color: var(--border); }
+
+.register-form { display: flex; flex-direction: column; gap: 12px; }
+.register-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    justify-content: center;
+}
+.register-row label { font-size: 0.88rem; color: var(--text-muted); font-weight: 500; }
+
+.type-select-wrap { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 180px; max-width: 400px; }
+.type-select-wrap select {
+    flex: 1; padding: 9px 12px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 0.93rem; background: var(--bg); color: var(--text);
+    outline: none; transition: border-color 0.15s; cursor: pointer; font-family: inherit;
+}
+.type-select-wrap select:focus { border-color: var(--primary); }
+
+.num-input {
+    width: 72px; padding: 9px 10px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 1rem; text-align: center; outline: none;
+    transition: border-color 0.15s; font-weight: 600;
+    background: var(--bg); color: var(--text);
+}
+.num-input:focus { border-color: var(--primary); }
+
+.btn-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border: 1.5px solid var(--border);
+    border-radius: 8px; background: transparent; color: var(--text-muted);
+    cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+}
+.btn-icon:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Case type label ── */
+.case-type-label {
+    font-size: 0.78rem; color: var(--text-muted);
+    background: rgba(255,255,255,0.05); border-radius: 5px;
+    padding: 2px 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+/* ── Updated case-item layout ── */
+.case-item {
+    display: flex; align-items: center; gap: 10px;
+    justify-content: space-between; padding: 10px 14px;
+    background: var(--bg); border-radius: 9px; font-size: 0.88rem;
+}
+.case-item-left  { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.case-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* ──────────── Tipos de caso ──────────── */
+.tipos-card { padding: 20px 18px; }
+.tipos-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+.tipos-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.empty-tipos { text-align: center; color: var(--text-muted); padding: 16px; font-size: 0.88rem; }
+
+.tipo-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; background: var(--bg); border-radius: 9px; flex-wrap: wrap;
+}
+.tipo-name-input {
+    flex: 1; min-width: 140px; padding: 8px 10px;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--text); font-size: 0.93rem;
+    font-family: inherit; outline: none; transition: border-color 0.15s;
+}
+.tipo-name-input:focus { border-color: var(--primary); }
+
+.tipo-pts-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tipo-pts-input { width: 64px; }
+.tipo-pts-label { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+
+/* ──────────── Chart — points bar color ──────────── */
+.chart-bar.pts { background: #86efac; }
+
+/* ──────────── History hday-case-row (simplified) ──────────── */
+.hday-case-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.04);
+    flex-wrap: wrap;
+}
+.hday-case-row:last-child { border-bottom: none; }
+
 .cong-preview-text {
     background: #020508; border: 1px solid var(--border); border-radius: 10px;
     padding: 16px 18px; font-family: 'Courier New', monospace; font-size: 0.82rem;

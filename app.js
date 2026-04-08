@@ -4,13 +4,12 @@ auth.onAuthStateChanged(async user => {
     authReady   = true;
     if (user) {
         await initData();
+        // Load case types synchronously so the form is ready
+        await loadCaseTypes();
         renderRoot();
-        if (data.state === 'working' || data.state === 'paused') startTimer();
-        // Load history and calendario in background so speedometers are available on the Today view
-        if (!historyCache)    loadHistory().then(() => renderRoot()).catch(() => {});
-        if (!calendarioCache) loadCalendario().then(() => renderRoot()).catch(() => {});
+        // Load history in background for stats/records/history views
+        if (!historyCache) loadHistory().then(() => renderRoot()).catch(() => {});
     } else {
-        stopTimer();
         data = defaultData();
         renderRoot();
     }
@@ -18,8 +17,8 @@ auth.onAuthStateChanged(async user => {
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/Assistente-trabalho/sw.js', {
-            scope: '/Assistente-trabalho/'
+        navigator.serviceWorker.register('/Assistente-lara/sw.js', {
+            scope: '/Assistente-lara/'
         }).catch(() => {});
     });
 }

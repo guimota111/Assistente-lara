@@ -1,7 +1,8 @@
 /* ──────────── Firestore refs ──────────── */
-function currentRef()      { return db.collection('users').doc(currentUser.uid).collection('data').doc('current'); }
-function historyRef(date)  { return db.collection('users').doc(currentUser.uid).collection('history').doc(date); }
-function historyCollRef()  { return db.collection('users').doc(currentUser.uid).collection('history'); }
+function currentRef()     { return db.collection('users').doc(currentUser.uid).collection('data').doc('current'); }
+function historyRef(date) { return db.collection('users').doc(currentUser.uid).collection('history').doc(date); }
+function historyCollRef() { return db.collection('users').doc(currentUser.uid).collection('history'); }
+function caseTypesRef()   { return db.collection('users').doc(currentUser.uid).collection('config').doc('caseTypes'); }
 
 /* ──────────── Data operations ──────────── */
 async function initData() {
@@ -9,14 +10,20 @@ async function initData() {
         const doc = await currentRef().get();
         if (doc.exists) {
             const d = doc.data();
-            d.cases  = d.cases  || [];
-            d.pauses = d.pauses || [];
             if (d.date !== todayStr()) {
-                if (d.workStartTime && d.cases.length > 0 && d.state !== 'ended') await saveToHistory(d);
+                // Day changed: save old data to history and reset
+                const oldCases = d.cases || (d.sessions || []).flatMap(s => s.cases || []);
+                if (oldCases.length > 0) await saveToHistory({ date: d.date, cases: oldCases });
                 data = defaultData();
                 saveData();
             } else {
-                data = d;
+                // Normalize legacy format (sessions-based) to flat cases
+                if (d.sessions && !d.cases) {
+                    data = { date: d.date, cases: d.sessions.flatMap(s => s.cases || []) };
+                    saveData();
+                } else {
+                    data = { date: d.date, cases: d.cases || [] };
+                }
             }
         } else {
             data = defaultData();
@@ -34,29 +41,18 @@ function saveData() {
 }
 
 async function saveToHistory(dayData) {
-    if (!currentUser || !dayData.workStartTime || !(dayData.cases || []).length) return;
-    const newSession = {
-        workStartTime: dayData.workStartTime,
-        dayEndTime: dayData.dayEndTime || new Date().toISOString(),
-        cases: dayData.cases,
-        pauses: dayData.pauses || [],
-    };
+    if (!currentUser || !(dayData.cases || []).length) return;
     historyCache = null;
     try {
         const existing = await historyRef(dayData.date).get();
         if (existing.exists) {
             const d = existing.data();
-            // migra formato antigo (sem sessions) para o novo
-            const sessions = d.sessions || [{
-                workStartTime: d.workStartTime,
-                dayEndTime: d.dayEndTime,
-                cases: d.cases || [],
-                pauses: d.pauses || [],
-            }];
-            sessions.push(newSession);
-            await historyRef(dayData.date).set({ date: dayData.date, sessions });
+            // Merge existing cases (handle both legacy sessions format and flat format)
+            const existingCases = d.cases || (d.sessions || []).flatMap(s => s.cases || []);
+            const merged = [...existingCases, ...dayData.cases];
+            await historyRef(dayData.date).set({ date: dayData.date, cases: merged });
         } else {
-            await historyRef(dayData.date).set({ date: dayData.date, sessions: [newSession] });
+            await historyRef(dayData.date).set({ date: dayData.date, cases: dayData.cases });
         }
     } catch (e) { console.warn('saveToHistory:', e); }
 }
@@ -75,62 +71,42 @@ async function loadHistory() {
     return historyCache;
 }
 
-function calcDayStats(day) {
-    // suporta formato novo (sessions[]) e antigo (campos diretos)
-    const sessions = day.sessions || [{
-        workStartTime: day.workStartTime,
-        dayEndTime: day.dayEndTime,
-        cases: day.cases || [],
-        pauses: day.pauses || [],
-    }];
-    let allCases = [], pauseMs = 0;
-    for (const s of sessions) {
-        allCases = allCases.concat(s.cases || []);
-        const spauses = s.pauses || [];
-        pauseMs += spauses.reduce((a, p) => a + ts(p.end) - ts(p.start), 0);
+/* ──────────── Case types ──────────── */
+async function loadCaseTypes() {
+    if (caseTypesCache !== null) return caseTypesCache;
+    if (!currentUser) { caseTypesCache = []; return caseTypesCache; }
+    try {
+        const doc = await caseTypesRef().get();
+        caseTypesCache = doc.exists ? (doc.data().types || []) : [];
+    } catch(e) {
+        console.warn('loadCaseTypes:', e);
+        caseTypesCache = [];
     }
-    // tempo trabalhado = soma das durações dos casos
-    const workMs = allCases.reduce((a, c) => a + c.duration, 0);
-    const ownCases      = allCases.filter(c => !c.thirdParty);
-    const totalCases    = allCases.length;
-    const ownTotalCases = ownCases.length;
-    const totalSlides   = allCases.reduce((a, c) => a + c.slides, 0);
-    const ownTotalSlides = ownCases.reduce((a, c) => a + c.slides, 0);
-    const totalCasesMs  = allCases.reduce((a, c) => a + c.duration, 0);
-    const ownCasesMs    = ownCases.reduce((a, c) => a + c.duration, 0);
-    const totalPoints   = allCases.reduce((a, c) => a + (c.points || 0), 0);
-    return {
-        totalCases, ownTotalCases,
-        totalSlides, ownTotalSlides,
-        totalCasesMs, ownCasesMs,
-        totalPoints,
-        avgPerCase:    totalCases    > 0 ? totalCasesMs / totalCases    : 0,
-        avgPerSlide:   totalSlides   > 0 ? totalCasesMs / totalSlides   : 0,
-        ownAvgPerCase: ownTotalCases > 0 ? ownCasesMs   / ownTotalCases : 0,
-        workMs, pauseMs, sessionCount: sessions.length, allCases,
-    };
+    return caseTypesCache;
 }
 
-/* ──────────── History references (for speedometers) ──────────── */
-function getHistoryRefs() {
-    if (!historyCache) return null;
-    const days = Object.values(historyCache);
-    if (days.length === 0) return null;
-    let totalMs = 0, totalSlides = 0, monthMs = 0, monthSlides = 0, bestAvg = Infinity;
-    const thisMonth = todayStr().slice(0, 7);
-    for (const day of days) {
-        const s = calcDayStats(day);
-        if (s.totalSlides > 0 && s.avgPerSlide > 0) {
-            totalMs     += s.totalCasesMs;
-            totalSlides += s.totalSlides;
-            if (s.avgPerSlide < bestAvg) bestAvg = s.avgPerSlide;
-            if (day.date.startsWith(thisMonth)) { monthMs += s.totalCasesMs; monthSlides += s.totalSlides; }
-        }
-    }
-    if (totalSlides === 0) return null;
+async function saveCaseTypes() {
+    if (!currentUser) return;
+    await caseTypesRef().set({ types: caseTypesCache || [] }).catch(e => console.warn('saveCaseTypes:', e));
+}
+
+/* ──────────── Stats calculation ──────────── */
+function getHistoryCases(day) {
+    return day.cases || (day.sessions || []).flatMap(s => s.cases || []);
+}
+
+function calcDayStats(day) {
+    const allCases   = getHistoryCases(day);
+    const ownCases   = allCases.filter(c => !c.thirdParty);
     return {
-        bestAvg:    bestAvg === Infinity ? 0 : bestAvg,
-        generalAvg: totalMs / totalSlides,
-        monthlyAvg: monthSlides > 0 ? monthMs / monthSlides : 0,
+        totalCases:    allCases.length,
+        ownTotalCases: ownCases.length,
+        totalSlides:   allCases.reduce((a, c) => a + c.slides, 0),
+        ownTotalSlides: ownCases.reduce((a, c) => a + c.slides, 0),
+        totalPoints:   allCases.reduce((a, c) => a + (c.points || 0), 0),
+        // Keep totalCasesMs / ownCasesMs for legacy history data that has duration
+        totalCasesMs:  allCases.reduce((a, c) => a + (c.duration || 0), 0),
+        ownCasesMs:    ownCases.reduce((a, c) => a + (c.duration || 0), 0),
+        allCases,
     };
 }
