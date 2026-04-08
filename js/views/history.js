@@ -83,7 +83,7 @@ function renderHistoryDay(day) {
     const header = `
     <div class="history-day-header" data-date="${day.date}">
         <div class="hday-left">
-            <div class="hday-date">${formatDateShort(day.date)}${getFreezeHospital(day.date) ? ` <span class="badge-freeze-day badge-freeze-day--${getFreezeHospital(day.date).toLowerCase()}">❄ ${getFreezeHospital(day.date)}</span>` : ''}</div>
+            <div class="hday-date">${formatDateShort(day.date)}</div>
             <div class="hday-meta">${s.totalSlides} lâminas · ${formatDuration(s.workMs)} trabalhado${sessaoLabel}</div>
         </div>
         <div style="display:flex;align-items:center;gap:4px">
@@ -97,6 +97,9 @@ function renderHistoryDay(day) {
     </div>`;
     if (!isOpen) return `<div class="history-day">${header}</div>`;
 
+    const pointsStatItem = s.totalPoints > 0
+        ? `<div class="hday-stat"><div class="hday-stat-val">${s.totalPoints}</div><div class="hday-stat-lbl">Pontos</div></div>`
+        : '';
     const statsRow = `
     <div class="hday-stats-row">
         <div class="hday-stat"><div class="hday-stat-val">${formatDuration(s.workMs)}</div><div class="hday-stat-lbl">Total trabalhado</div></div>
@@ -105,6 +108,7 @@ function renderHistoryDay(day) {
         <div class="hday-stat"><div class="hday-stat-val">${s.avgPerSlide > 0 ? formatShort(s.avgPerSlide) : '--'}</div><div class="hday-stat-lbl">Média/lâmina</div></div>
         <div class="hday-stat"><div class="hday-stat-val">${s.totalCases}</div><div class="hday-stat-lbl">Casos</div></div>
         <div class="hday-stat"><div class="hday-stat-val">${s.totalSlides}</div><div class="hday-stat-lbl">Lâminas</div></div>
+        ${pointsStatItem}
     </div>`;
 
     const sessions = day.sessions || [{
@@ -124,10 +128,12 @@ function renderHistoryDay(day) {
             ? new Date(session.dayEndTime).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '--';
         const caseRows = [...sCases].reverse().map((c, ri, arr) => {
             const origIdx = sCases.length - 1 - ri;
+            const pointsBadge = c.points > 0 ? `<span class="case-points" title="Pontos">${c.points} pts</span>` : '';
             return `
-            <div class="hday-case-row" style="grid-template-columns: auto 1fr auto auto auto;">
-                <span class="case-num">Caso #${arr.length - ri}${c.thirdParty ? ' <span class="badge-3rd">3°</span>' : ''}${c.frozen ? ' <span class="badge-frozen">❄</span>' : ''}</span>
+            <div class="hday-case-row" style="grid-template-columns: auto 1fr auto auto auto auto;">
+                <span class="case-num">Caso #${arr.length - ri}${c.thirdParty ? ' <span class="badge-3rd">3°</span>' : ''}</span>
                 <span class="case-slides">${c.slides} lâmina${c.slides !== 1 ? 's' : ''}</span>
+                ${pointsBadge}
                 <span class="case-time">${new Date(c.endTime).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
                 <span class="case-dur">${formatShort(c.duration)}</span>
                 <button class="btn-delete" data-delete-hcase data-date="${day.date}" data-session="${idx}" data-caseidx="${origIdx}" title="Apagar caso">✕</button>

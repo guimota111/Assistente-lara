@@ -66,26 +66,27 @@ function attachEvents() {
 
     document.getElementById('btnStart')?.addEventListener('click', startWork);
     document.getElementById('btnCase3rd')?.addEventListener('click', () => {
-        const input = document.getElementById('slidesInput');
-        const slides = Math.max(1, parseInt(input.value) || 1);
-        registerCase(slides, true);
-        setTimeout(() => { const i = document.getElementById('slidesInput'); if (i) { i.value = 1; i.select(); } }, 50);
-    });
-    document.getElementById('btnStartFrozen')?.addEventListener('click', startFrozen);
-    document.getElementById('btnStopFrozen')?.addEventListener('click', stopFrozen);
-    document.getElementById('btnCaseFrozen')?.addEventListener('click', () => {
-        const input = document.getElementById('slidesInput');
-        const slides = Math.max(1, parseInt(input.value) || 1);
-        registerCase(slides, false, true);
-        setTimeout(() => { const i = document.getElementById('slidesInput'); if (i) { i.value = 1; i.select(); } }, 50);
+        const slides = Math.max(1, parseInt(document.getElementById('slidesInput')?.value) || 1);
+        const points = Math.max(0, parseInt(document.getElementById('pointsInput')?.value) || 0);
+        registerCase(slides, true, points);
+        setTimeout(() => {
+            const si = document.getElementById('slidesInput'); if (si) { si.value = 1; si.select(); }
+            const pi = document.getElementById('pointsInput'); if (pi) pi.value = 0;
+        }, 50);
     });
     document.getElementById('btnCase')?.addEventListener('click', () => {
-        const input = document.getElementById('slidesInput');
-        const slides = Math.max(1, parseInt(input.value) || 1);
-        registerCase(slides);
-        setTimeout(() => { const i = document.getElementById('slidesInput'); if (i) { i.value = 1; i.select(); } }, 50);
+        const slides = Math.max(1, parseInt(document.getElementById('slidesInput')?.value) || 1);
+        const points = Math.max(0, parseInt(document.getElementById('pointsInput')?.value) || 0);
+        registerCase(slides, false, points);
+        setTimeout(() => {
+            const si = document.getElementById('slidesInput'); if (si) { si.value = 1; si.select(); }
+            const pi = document.getElementById('pointsInput'); if (pi) pi.value = 0;
+        }, 50);
     });
     document.getElementById('slidesInput')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('btnCase')?.click();
+    });
+    document.getElementById('pointsInput')?.addEventListener('keydown', e => {
         if (e.key === 'Enter') document.getElementById('btnCase')?.click();
     });
     document.getElementById('btnPause')?.addEventListener('click', pauseWork);
@@ -140,17 +141,6 @@ function attachEvents() {
         btn.addEventListener('click', () => deleteCase(parseInt(btn.dataset.deleteCase)));
     });
 
-    document.getElementById('sideNavCalendario')?.addEventListener('click', () => setView('calendario'));
-    document.getElementById('sideNavCongelacao')?.addEventListener('click', () => setView('congelacao'));
-    document.getElementById('btnToggleFreeze')?.addEventListener('click', () => { excludeFreezeDays = !excludeFreezeDays; renderRoot(); });
-
-    document.querySelectorAll('.cal-nav-btn[data-cal-month]').forEach(btn => {
-        btn.addEventListener('click', () => { calViewMonth = btn.dataset.calMonth; renderRoot(); });
-    });
-    document.querySelectorAll('.cal-cell[data-toggle-freeze]').forEach(cell => {
-        cell.addEventListener('click', () => toggleFreezeDay(cell.dataset.toggleFreeze));
-    });
-
     document.querySelectorAll('.period-btn[data-period]').forEach(btn => {
         btn.addEventListener('click', () => { statsView = btn.dataset.period; renderRoot(); });
     });
@@ -160,7 +150,4 @@ function attachEvents() {
     document.querySelectorAll('.segment-chip[data-segment]').forEach(chip => {
         chip.addEventListener('click', () => { statsSegment = chip.dataset.segment; renderRoot(); });
     });
-
-    // ── Congelação events ──
-    if (currentView === 'congelacao') attachCongEvents();
 }

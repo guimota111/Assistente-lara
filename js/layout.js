@@ -10,10 +10,6 @@ async function setView(view) {
         renderRoot();
         await loadPendencias();
     }
-    if (view === 'calendario' && !calendarioCache) {
-        renderRoot();
-        await loadCalendario();
-    }
     renderRoot();
 }
 
@@ -43,12 +39,6 @@ function renderRoot() {
     } else if (currentView === 'pendencias') {
         contentHTML = renderPendencias();
         viewTitle = 'Pendências';
-    } else if (currentView === 'calendario') {
-        contentHTML = renderCalendario();
-        viewTitle = 'Calendário';
-    } else if (currentView === 'congelacao') {
-        contentHTML = renderCongelacao();
-        viewTitle = 'Congelação';
     } else {
         contentHTML = renderToday();
         viewTitle = 'Controle de Laudos';
@@ -84,14 +74,6 @@ function renderRoot() {
             <button class="sidebar-nav-item${currentView === 'pendencias' ? ' active' : ''}" id="sideNavPendencias">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                 Pendências
-            </button>
-            <button class="sidebar-nav-item${currentView === 'calendario' ? ' active' : ''}" id="sideNavCalendario">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14" stroke-width="3" stroke-linecap="round"/></svg>
-                Calendário
-            </button>
-            <button class="sidebar-nav-item${currentView === 'congelacao' ? ' active' : ''}" id="sideNavCongelacao">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/></svg>
-                Congelação
             </button>
         </nav>
         <div class="sidebar-footer">

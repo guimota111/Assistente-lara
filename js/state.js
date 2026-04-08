@@ -9,13 +9,7 @@ function defaultData() {
         pauses: [],
         currentPauseStart: null,
         dayEndTime: null,
-        frozenStart: null,
     };
-}
-
-function defaultCongDoc() {
-    return { hospital: '', paciente: '', cirurgiao: '', patologista: '',
-             informesClinicosVisible: false, informesClinicos: '', pecas: [] };
 }
 
 /* ──────────── State ──────────── */
@@ -34,9 +28,3 @@ let statsView        = 'week';
 let statsSegment     = 'all';
 let statsMetric      = 'cases';
 let pendenciasCache    = null;
-let calendarioCache    = null;
-let calViewMonth       = null; // 'YYYY-MM'
-let excludeFreezeDays  = false;
-
-/* ──────────── Congelação State ──────────── */
-let congDoc = defaultCongDoc();

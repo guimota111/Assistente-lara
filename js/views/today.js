@@ -1,16 +1,12 @@
 /* ──────────── Today view ──────────── */
 function renderToday() {
     const s = getStats();
-    const todayHospital = getFreezeHospital(todayStr());
-    const freezeBanner = todayHospital
-        ? `<div class="freeze-day-banner freeze-day-banner--${todayHospital.toLowerCase()}">❄ Plantão de congelação — ${todayHospital}</div>`
-        : '';
     let content;
     if      (data.state === 'idle')    content = renderIdle();
     else if (data.state === 'working') content = renderWorking(s);
     else if (data.state === 'paused')  content = renderPaused(s);
     else                               content = renderEnded(s);
-    return freezeBanner + content;
+    return content;
 }
 
 function renderIdle() {
@@ -37,19 +33,12 @@ function renderWorking(s) {
                 <div class="register-area">
                     <label for="slidesInput">Lâminas:</label>
                     <input class="slides-input" type="number" id="slidesInput" min="1" value="1">
+                    <label for="pointsInput">Pontos:</label>
+                    <input class="slides-input" type="number" id="pointsInput" min="0" value="0" style="width:70px">
                 </div>
-                ${data.frozenStart ? `
-                <div class="frozen-widget">
-                    <span class="frozen-icon">🧊</span>
-                    <span>Congelação — <span id="frozenTimer">${formatDuration(getCurrentFrozenDuration())}</span></span>
-                    <button class="btn-stop-frozen" id="btnStopFrozen" title="Cancelar timer de congelação">✕</button>
-                </div>` : ''}
                 <div class="register-area-btns">
                     <button class="btn btn-success" id="btnCase">Registrar Caso</button>
                     <button class="btn btn-outline" id="btnCase3rd" title="Registrar caso de segunda assinatura">+ Terceiro</button>
-                    ${data.frozenStart
-                        ? `<button class="btn btn-frozen" id="btnCaseFrozen">Registrar Congelação</button>`
-                        : `<button class="btn btn-outline btn-frozen-start" id="btnStartFrozen" title="Registrar chegada de congelação">🧊 Congelação</button>`}
                 </div>
                 <div class="actions">
                     <button class="btn btn-pause" id="btnPause">Pausar</button>
@@ -94,6 +83,9 @@ function renderPaused(s) {
 
 function renderEnded(s) {
     const totalPause = data.pauses.reduce((a, p) => a + ts(p.end) - ts(p.start), 0);
+    const pointsRow = s.totalPoints > 0
+        ? `<div class="summary-item"><div class="s-value">${s.totalPoints}</div><div class="s-label">Pontos do dia</div></div>`
+        : '';
     return `
     <div class="card status-card state-ended">
         <div class="state-badge">Sessão Encerrada</div>
@@ -106,6 +98,7 @@ function renderEnded(s) {
             <div class="summary-item"><div class="s-value">${s.totalSlides > 0 ? formatShort(s.avgPerSlide) : '--'}</div><div class="s-label">Média por lâmina</div></div>
             <div class="summary-item"><div class="s-value">${totalPause > 0 ? formatShort(totalPause) : '0s'}</div><div class="s-label">Tempo em pausa</div></div>
             <div class="summary-item"><div class="s-value">${data.pauses.length}</div><div class="s-label">Pausas realizadas</div></div>
+            ${pointsRow}
         </div>
         <div class="actions">
             <button class="btn btn-outline" id="btnNewDay">Iniciar Nova Sessão</button>
@@ -116,6 +109,9 @@ function renderEnded(s) {
 }
 
 function renderStatsGrid(s) {
+    const pointsItem = s.totalPoints > 0
+        ? `<div class="stat-item"><div class="stat-value">${s.totalPoints}</div><div class="stat-label">Pontos</div></div>`
+        : '';
     return `
     <div class="card stats-card">
         <div class="stats-card-title">Estatísticas da sessão</div>
@@ -126,6 +122,7 @@ function renderStatsGrid(s) {
             <div class="stat-item"><div class="stat-value">${s.totalSlides}</div><div class="stat-label">Lâminas</div></div>
             <div class="stat-item"><div class="stat-value" id="statAvgCase">${s.totalCases > 0 ? formatShort(s.avgPerCase) : '--'}</div><div class="stat-label">Média/Caso</div></div>
             <div class="stat-item"><div class="stat-value" id="statAvgSlide">${s.totalSlides > 0 ? formatShort(s.avgPerSlide) : '--'}</div><div class="stat-label">Média/Lâmina</div></div>
+            ${pointsItem}
         </div>
     </div>`;
 }
@@ -135,8 +132,9 @@ function renderCasesList() {
     if (data.cases.length === 0) return title + `<div class="empty-cases">Nenhum caso registrado ainda.</div></div>`;
     const rows = [...data.cases].reverse().map(c => `
         <div class="case-item">
-            <span class="case-num">Caso #${c.id}${c.thirdParty ? ' <span class="badge-3rd">3°</span>' : ''}${c.frozen ? ' <span class="badge-frozen">❄</span>' : ''}</span>
+            <span class="case-num">Caso #${c.id}${c.thirdParty ? ' <span class="badge-3rd">3°</span>' : ''}</span>
             <span class="case-slides">${c.slides} lâmina${c.slides !== 1 ? 's' : ''}</span>
+            ${c.points > 0 ? `<span class="case-points" title="Pontos">${c.points} pts</span>` : ''}
             <span class="case-time">${new Date(c.endTime).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
             <span class="case-dur">${formatShort(c.duration)}</span>
             <button class="btn-delete" data-delete-case="${c.id}" title="Apagar caso">✕</button>

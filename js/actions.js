@@ -10,7 +10,7 @@ function startWork() {
     startTimer();
 }
 
-function registerCase(slides, thirdParty = false, frozen = false) {
+function registerCase(slides, thirdParty = false, points = 0) {
     const endTime   = new Date().toISOString();
     const caseStart = ts(data.currentCaseStart);
     const caseEnd   = ts(endTime);
@@ -28,21 +28,9 @@ function registerCase(slides, thirdParty = false, frozen = false) {
         duration: Math.max(0, duration),
     };
     if (thirdParty) entry.thirdParty = true;
-    if (frozen) { entry.frozen = true; data.frozenStart = null; }
+    if (points > 0) entry.points = points;
     data.cases.push(entry);
     data.currentCaseStart = endTime;
-    saveData();
-    renderRoot();
-}
-
-function startFrozen() {
-    data.frozenStart = new Date().toISOString();
-    saveData();
-    renderRoot();
-}
-
-function stopFrozen() {
-    data.frozenStart = null;
     saveData();
     renderRoot();
 }

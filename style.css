@@ -560,15 +560,14 @@ header .date { color: var(--text-muted); font-size: 0.85rem; text-transform: cap
 .btn-frozen:hover:not(:disabled) { background: #0c6277; }
 .btn-frozen-start { font-size: 0.85rem; }
 
-/* ── Frozen badge ── */
-.badge-frozen {
+/* ── Points badge ── */
+.case-points {
     display: inline-block; font-size: 0.65rem; font-weight: 700;
-    background: #083344; color: #67e8f9; border-radius: 5px;
+    background: #1a2e1a; color: #86efac; border-radius: 5px;
     padding: 1px 6px; letter-spacing: 0.04em; flex-shrink: 0;
 }
 
 /* ── Chart stacked value ── */
-.chart-bar.frozen { background: #0891b2; }
 .chart-val-stack { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 0.6rem; font-weight: 700; line-height: 1.1; }
 
 /* ──────────── Pendências ──────────── */
