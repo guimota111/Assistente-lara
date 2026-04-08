@@ -92,13 +92,9 @@ function renderSpeedometers(s) {
             ${diffHtml}
         </div>`;
     }).join('');
-    const freezeToggleLabel = excludeFreezeDays ? '❄ Com plantões' : '❄ Sem plantões';
-    const freezeToggleTip   = excludeFreezeDays ? 'Dias de plantão estão excluídos das referências. Clique para incluir.' : 'Clique para excluir dias de plantão das referências.';
-    const hasCalendario = isFreezeDateSet();
     return `<div class="card speedometers-wrap">
         <div class="speedometers-title-row">
             <span class="speedometers-title">Velocidade por lâmina</span>
-            ${hasCalendario ? `<button class="freeze-toggle-btn${excludeFreezeDays ? ' active' : ''}" id="btnToggleFreeze" title="${freezeToggleTip}">${freezeToggleLabel}</button>` : ''}
         </div>
         <div class="speedometers-grid">${cards}</div>
     </div>`;

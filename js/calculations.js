@@ -20,11 +20,6 @@ function getCurrentPauseDuration() {
     return now() - ts(data.currentPauseStart);
 }
 
-function getCurrentFrozenDuration() {
-    if (!data.frozenStart) return 0;
-    return now() - ts(data.frozenStart);
-}
-
 function getCurrentCaseDuration() {
     if (!data.currentCaseStart) return 0;
     const caseStart = ts(data.currentCaseStart);
@@ -45,9 +40,11 @@ function getStats() {
     const totalCases   = data.cases.length;
     const totalSlides  = data.cases.reduce((a, c) => a + c.slides, 0);
     const totalCasesMs = data.cases.reduce((a, c) => a + c.duration, 0);
+    const totalPoints  = data.cases.reduce((a, c) => a + (c.points || 0), 0);
     return {
         totalCases,
         totalSlides,
+        totalPoints,
         totalWorkMs:  getTotalWorkingTime(),
         totalPauseMs: getTotalPauseTime(),
         avgPerCase:   totalCases  > 0 ? totalCasesMs / totalCases  : 0,

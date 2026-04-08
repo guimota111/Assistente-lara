@@ -15,7 +15,6 @@ function tickTimer() {
     setText('statPause',        formatDuration(s.totalPauseMs));
     setText('statAvgCase',      s.totalCases  > 0 ? formatShort(s.avgPerCase)  : '--');
     setText('statAvgSlide',     s.totalSlides > 0 ? formatShort(s.avgPerSlide) : '--');
-    if (data.frozenStart) setText('frozenTimer', formatDuration(getCurrentFrozenDuration()));
     updatePieInPlace();
 }
 

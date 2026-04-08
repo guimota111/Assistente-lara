@@ -2,7 +2,6 @@
 function currentRef()      { return db.collection('users').doc(currentUser.uid).collection('data').doc('current'); }
 function historyRef(date)  { return db.collection('users').doc(currentUser.uid).collection('history').doc(date); }
 function historyCollRef()  { return db.collection('users').doc(currentUser.uid).collection('history'); }
-function calendarioRef()   { return db.collection('users').doc(currentUser.uid).collection('calendario').doc('freezeDays'); }
 
 /* ──────────── Data operations ──────────── */
 async function initData() {
@@ -92,25 +91,22 @@ function calcDayStats(day) {
     }
     // tempo trabalhado = soma das durações dos casos
     const workMs = allCases.reduce((a, c) => a + c.duration, 0);
-    const ownCases    = allCases.filter(c => !c.thirdParty);
-    const frozenCases = allCases.filter(c => c.frozen);
-    const totalCases        = allCases.length;
-    const ownTotalCases     = ownCases.length;
-    const totalSlides       = allCases.reduce((a, c) => a + c.slides, 0);
-    const ownTotalSlides    = ownCases.reduce((a, c) => a + c.slides, 0);
-    const totalCasesMs      = allCases.reduce((a, c) => a + c.duration, 0);
-    const ownCasesMs        = ownCases.reduce((a, c) => a + c.duration, 0);
-    const frozenTotalCases  = frozenCases.length;
-    const frozenTotalSlides = frozenCases.reduce((a, c) => a + c.slides, 0);
-    const frozenCasesMs     = frozenCases.reduce((a, c) => a + c.duration, 0);
+    const ownCases      = allCases.filter(c => !c.thirdParty);
+    const totalCases    = allCases.length;
+    const ownTotalCases = ownCases.length;
+    const totalSlides   = allCases.reduce((a, c) => a + c.slides, 0);
+    const ownTotalSlides = ownCases.reduce((a, c) => a + c.slides, 0);
+    const totalCasesMs  = allCases.reduce((a, c) => a + c.duration, 0);
+    const ownCasesMs    = ownCases.reduce((a, c) => a + c.duration, 0);
+    const totalPoints   = allCases.reduce((a, c) => a + (c.points || 0), 0);
     return {
-        totalCases, ownTotalCases, frozenTotalCases,
-        totalSlides, ownTotalSlides, frozenTotalSlides,
-        totalCasesMs, ownCasesMs, frozenCasesMs,
-        avgPerCase:     totalCases      > 0 ? totalCasesMs   / totalCases      : 0,
-        avgPerSlide:    totalSlides     > 0 ? totalCasesMs   / totalSlides     : 0,
-        ownAvgPerCase:  ownTotalCases   > 0 ? ownCasesMs     / ownTotalCases   : 0,
-        frozenAvgPerCase: frozenTotalCases > 0 ? frozenCasesMs / frozenTotalCases : 0,
+        totalCases, ownTotalCases,
+        totalSlides, ownTotalSlides,
+        totalCasesMs, ownCasesMs,
+        totalPoints,
+        avgPerCase:    totalCases    > 0 ? totalCasesMs / totalCases    : 0,
+        avgPerSlide:   totalSlides   > 0 ? totalCasesMs / totalSlides   : 0,
+        ownAvgPerCase: ownTotalCases > 0 ? ownCasesMs   / ownTotalCases : 0,
         workMs, pauseMs, sessionCount: sessions.length, allCases,
     };
 }
@@ -120,11 +116,9 @@ function getHistoryRefs() {
     if (!historyCache) return null;
     const days = Object.values(historyCache);
     if (days.length === 0) return null;
-    const freezeDates = (excludeFreezeDays && calendarioCache) ? new Set(Object.keys(calendarioCache.days || {})) : null;
     let totalMs = 0, totalSlides = 0, monthMs = 0, monthSlides = 0, bestAvg = Infinity;
     const thisMonth = todayStr().slice(0, 7);
     for (const day of days) {
-        if (freezeDates && freezeDates.has(day.date)) continue;
         const s = calcDayStats(day);
         if (s.totalSlides > 0 && s.avgPerSlide > 0) {
             totalMs     += s.totalCasesMs;

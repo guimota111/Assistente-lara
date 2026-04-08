@@ -1,14 +1,8 @@
 /* ──────────── Records view ──────────── */
 function renderRecords() {
     if (!historyCache) return '<div style="text-align:center;padding:40px;color:var(--text-muted)">Carregando...</div>';
-    const allDaysRec = Object.values(historyCache).sort((a, b) => a.date.localeCompare(b.date));
-    if (allDaysRec.length === 0) return `<div class="empty-history">Nenhum histórico ainda.<br>Encerre sua primeira sessão para ver os records.</div>`;
-    const freezeDatesRec = (excludeFreezeDays && calendarioCache) ? new Set(Object.keys(calendarioCache.days || {})) : null;
-    const days = freezeDatesRec ? allDaysRec.filter(d => !freezeDatesRec.has(d.date)) : allDaysRec;
-    const hasCalRec = isFreezeDateSet();
-    const recFreezeBtnHTML = hasCalRec
-        ? `<div class="records-filter-row"><button class="freeze-toggle-btn${excludeFreezeDays ? ' active' : ''}" id="btnToggleFreeze" title="${excludeFreezeDays ? 'Plantões excluídos. Clique para incluir.' : 'Clique para excluir dias de plantão dos records.'}">${excludeFreezeDays ? '❄ Com plantões' : '❄ Sem plantões'}</button></div>`
-        : '';
+    const days = Object.values(historyCache).sort((a, b) => a.date.localeCompare(b.date));
+    if (days.length === 0) return `<div class="empty-history">Nenhum histórico ainda.<br>Encerre sua primeira sessão para ver os records.</div>`;
 
     function weekKey(dateStr) {
         const d = new Date(dateStr + 'T12:00:00');
@@ -65,7 +59,7 @@ function renderRecords() {
         ${date ? `<div class="record-date">${date}</div>` : ''}
     </div>`;
 
-    return recFreezeBtnHTML + `
+    return `
     <div class="records-section">
         <div class="records-section-title">Records de Dia</div>
         <div class="records-grid">
